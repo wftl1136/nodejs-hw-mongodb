@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-const contactsSchema = new Schema(
+export const contactsSchema = new Schema(
   {
     name: {
       type: String,
@@ -16,6 +16,11 @@ const contactsSchema = new Schema(
     isFavourite: {
       type: Boolean,
       default: false,
+      set: (val) => {
+        if (typeof val === 'boolean') return val;
+        if (typeof val === 'string') return val.toLowerCase() === 'on';
+        return Boolean(val);
+      },
     },
     contactType: {
       type: String,
