@@ -10,6 +10,9 @@ import { welcome } from './utils/wellcome.js';
 export const setupServer = () => {
   const app = express();
 
+
+  app.use(express.json());
+
   app.use(cors());
 
   app.use(
@@ -20,13 +23,13 @@ export const setupServer = () => {
     }),
   );
 
-
+ 
   app.get('/', (req, res) => {
     const accept = req.headers.accept || '';
     if (accept.includes('text/html')) {
-      res.send(welcome());
+      return res.send(welcome()); 
     }
-    res.status(200).json({ message: 'Hello. Wellcome to contacts!' });
+    return res.status(200).json({ message: 'Hello. Welcome to contacts!' });
   });
 
   app.get('/contacts', async (req, res, next) => {
@@ -35,13 +38,14 @@ export const setupServer = () => {
 
       const accept = req.headers.accept || '';
       if (accept.includes('text/html')) {
-        res.send(renderContactsList(contacts));
+        return res.send(renderContactsList(contacts)); 
       } else {
-        res
+        return res
           .status(200)
           .json({ message: 'Successfully found contacts!', data: contacts });
       }
     } catch (error) {
+      
       next(error);
     }
   });
@@ -51,13 +55,14 @@ export const setupServer = () => {
       const { contactId } = req.params;
       const contact = await getContactsById(contactId);
       const accept = req.headers.accept || '';
+
       if (!contact) {
         return res.status(404).json({ message: 'Contact not found' });
       }
       if (accept.includes('text/html')) {
-        res.send(renderContact(contact));
+        return res.send(renderContact(contact)); 
       } else {
-        res.status(200).json({
+        return res.status(200).json({
           message: `Successfully found contact with id ${contactId}!`,
           data: contact,
         });
@@ -67,16 +72,29 @@ export const setupServer = () => {
     }
   });
 
+
   app.use((req, res, next) => {
-    res.status(404).json({
+    return res.status(404).json({
       message: 'Not found',
     });
   });
 
+  
   app.use((err, req, res, next) => {
-    res.status(500).json({
+  
+    console.error('Unhandled error:', err && err.stack ? err.stack : err);
+
+    
+    if (res.headersSent) {
+      return next(err);
+    }
+
+    
+    const status = err && err.status ? err.status : 500;
+
+    return res.status(status).json({
       message: 'Something went wrong',
-      error: err.message,
+      error: err && err.message ? err.message : String(err),
     });
   });
 
