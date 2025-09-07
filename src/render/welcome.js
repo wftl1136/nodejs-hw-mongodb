@@ -8,4 +8,3 @@ export const welcome = () =>
         <a href='/contacts'>Contacts</a>
         </body>
     </html>`;
-    
