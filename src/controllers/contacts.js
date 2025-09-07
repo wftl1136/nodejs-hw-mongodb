@@ -9,13 +9,36 @@ import {
 import { renderContact } from '../render/Contact/renderContact.js';
 import { renderContactsList } from '../render/ContactsList/renderContactsList.js';
 import { renderForm } from '../render/Form/renderForm.js';
+import { parsePaginationParams } from '../utils/parsePaginationParams.js';
+import { parseSortParams } from '../utils/parseSortParams.js';
+import { parseFilterParams } from '../utils/parseFilterParams.js';
 
 export const getContactsController = async (req, res) => {
-  const contacts = await getAllContacts();
+  const { page, perPage } = parsePaginationParams(req.query);
+  const { sortOrder, sortBy } = parseSortParams(req.query);
+  const filter = parseFilterParams(req.query);
+
+  const contacts = await getAllContacts({
+    page,
+    perPage,
+    sortOrder,
+    sortBy,
+    filter,
+  });
   const accept = req.headers.accept || '';
   if (accept.includes('text/html')) {
     const msg = req.query.msg || '';
-    res.send(renderContactsList(contacts, msg));
+    res.send(
+      renderContactsList(contacts.data, msg, {
+        page: contacts.page,
+        totalItems: contacts.totalItems,
+        totalPages: contacts.totalPages,
+        hasNextPage: contacts.hasNextPage,
+        hasPreviousPage: contacts.hasPreviousPage,
+        perPage: contacts.perPage,
+        query: req.query,
+      }),
+    );
   } else {
     res.status(200).json({
       status: 200,
@@ -59,9 +82,6 @@ export const getContactEditController = async (req, res) => {
 export const createContactController = async (req, res) => {
   const contact = await createContact(req.body);
   const accept = req.headers.accept || '';
-  if (!req.body.name || !req.body.phoneNumber || !req.body.contactType) {
-  throw createHttpError(400, 'Missing required fields');
-}
   if (accept.includes('text/html')) {
     return res.redirect(
       `/contacts?msg=Successfully+created+a+contac+twith+id+${contact.id}!`,
@@ -122,7 +142,7 @@ export const pathContactController = async (req, res) => {
   }
   const accept = req.headers.accept || '';
   if (accept.includes('text/html')) {
-    return res.send('Successfully patched a contact with id ${contactId}!');
+    return res.send(`Successfully patched a contact with id ${contactId}!`);
   }
   res.status(200).json({
     status: 200,

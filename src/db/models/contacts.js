@@ -16,11 +16,6 @@ export const contactsSchema = new Schema(
     isFavourite: {
       type: Boolean,
       default: false,
-      set: (val) => {
-        if (typeof val === 'boolean') return val;
-        if (typeof val === 'string') return val.toLowerCase() === 'on';
-        return Boolean(val);
-      },
     },
     contactType: {
       type: String,
@@ -29,7 +24,7 @@ export const contactsSchema = new Schema(
       default: 'personal',
     },
   },
-  { timestamps: true },
+  { timestamps: true, strict: 'throw' },
 );
 
 export const ContactsCollection = model('Contact', contactsSchema);
