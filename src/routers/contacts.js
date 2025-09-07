@@ -12,24 +12,56 @@ import {
 import { ctrlWrapper } from '../utils/ctrlWrapper.js';
 import { isValidId } from '../middlewares/isValidId.js';
 import { validateBody } from '../middlewares/validateBody.js';
-import { createContactsSchema, upDateContactsSchema } from '../validation/contacts.js';
+import {
+  createContactsSchema,
+  upDateContactsSchema,
+} from '../validation/contacts.js';
+import { authenticate } from '../middlewares/authenticate.js';
 
 const router = Router();
 
-router.get('/contacts', ctrlWrapper(getContactsController));
+router.use(authenticate);
 
-router.get('/contacts/new', ctrlWrapper(getNewController));
+router.get('/', ctrlWrapper(getContactsController));
 
-router.get('/contacts/:contactId/edit', isValidId('contactId'), ctrlWrapper(getContactEditController));
+router.get('/new', ctrlWrapper(getNewController));
 
-router.get('/contacts/:contactId', isValidId('contactId'), ctrlWrapper(getContactsByIdController));
+router.get(
+  '/:contactId/edit',
+  isValidId('contactId'),
+  ctrlWrapper(getContactEditController),
+);
 
-router.post('/contacts', validateBody(createContactsSchema), ctrlWrapper(createContactController));
+router.get(
+  '/:contactId',
+  isValidId('contactId'),
+  ctrlWrapper(getContactsByIdController),
+);
 
-router.delete('/contacts/:contactId', isValidId('contactId'), ctrlWrapper(deleteContactController));
+router.post(
+  '/',
+  validateBody(createContactsSchema),
+  ctrlWrapper(createContactController),
+);
 
-router.put('/contacts/:contactId', isValidId('contactId'), validateBody(createContactsSchema), ctrlWrapper(upsertContactController));
+router.delete(
+  '/:contactId',
+  isValidId('contactId'),
+  ctrlWrapper(deleteContactController),
+);
 
-router.patch('/contacts/:contactId', isValidId('contactId'), validateBody(upDateContactsSchema), ctrlWrapper(pathContactController));
+router.put(
+  '/:contactId',
+  isValidId('contactId'),
+  validateBody(createContactsSchema),
+  ctrlWrapper(upsertContactController),
+);
+
+router.patch(
+  '/:contactId',
+  isValidId('contactId'),
+  validateBody(upDateContactsSchema),
+  ctrlWrapper(pathContactController),
+);
 
 export default router;
