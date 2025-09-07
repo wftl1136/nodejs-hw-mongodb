@@ -12,6 +12,9 @@ import { renderForm } from '../render/Form/renderForm.js';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import { saveFileToUploadDir } from '../utils/saveFileToUploadDir.js';
+import { config } from '../config.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
 export const getContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
@@ -80,18 +83,40 @@ export const getContactEditController = async (req, res) => {
   res.send(renderForm(contact, true));
 };
 
-export const createContactController = async (req, res) => {
-  const contact = await createContact({ ...req.body, userId: req.user._id });
+export const createContactController = async (req, res, next) => {
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (config.cloudinary.enable === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
+
+  const result = await createContact({
+    ...req.body,
+    photo: photoUrl,
+    userId: req.user._id,
+  });
+
+  if (!result) {
+    next(createHttpError(404, 'Student not found'));
+    return;
+  }
+
   const accept = req.headers.accept || '';
   if (accept.includes('text/html')) {
     return res.redirect(
-      `/contacts?msg=Successfully+created+a+contac+twith+id+${contact.id}!`,
+      `/contacts?msg=Successfully+created+a+contac+with+id+${result.contact.id}!`,
     );
   }
   res.status(201).json({
     status: 201,
     message: `Successfully created a contact!`,
-    data: contact,
+    data: result.contact,
   });
 };
 
@@ -112,10 +137,23 @@ export const deleteContactController = async (req, res) => {
 
 export const upsertContactController = async (req, res) => {
   const { contactId } = req.params;
+
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (config.cloudinary.enable === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
+
   const result = await updateContact({
     contactId,
     userId: req.user._id,
-    payload: req.body,
+    payload: { ...req.body, photo: photoUrl },
     options: { upsert: true },
   });
   if (!result) {
@@ -142,10 +180,27 @@ export const upsertContactController = async (req, res) => {
 
 export const pathContactController = async (req, res) => {
   const { contactId } = req.params;
+
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (config.cloudinary.enable === 'true') {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
+
+  if ((!req.body || Object.keys(req.body).length === 0) && !photo) {
+    throw createHttpError(400, 'No fields provided to update');
+  }
+
   const result = await updateContact({
     contactId,
     userId: req.user._id,
-    payload: req.body,
+    payload: { ...req.body, photo: photoUrl },
   });
   if (!result) {
     throw createHttpError(404, 'Contact not found');

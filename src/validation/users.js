@@ -45,3 +45,14 @@ export const loginUserSchema = Joi.object({
     'password.required': 'Password should be required',
   }),
 });
+
+export const requestResetEmailSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'email.required': 'Email should be required',
+  }),
+});
+
+export const resetPasswordSchema = Joi.object({
+  password: Joi.string().required(),
+  token: Joi.string().required(),
+});
