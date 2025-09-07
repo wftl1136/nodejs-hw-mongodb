@@ -7,5 +7,5 @@ export const welcome = () =>
         <h1>Hello. Wellcome to contacts!</h1>
         <a href='/contacts'>Contacts</a>
         </body>
-    </html>`;
+    </html>`; 
     
