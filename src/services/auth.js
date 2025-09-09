@@ -110,30 +110,41 @@ export const requestResetToken = async (email) => {
     },
   );
 
-  const link = `${config.domain}/reset-pwd?token=${resetToken}`;
+  const link = `${config.domain}/reset-pwd?token=${encodeURIComponent(resetToken)}`;
 
-  const resetPasswordTemplatePath = path.join(
+  const resetPasswordTemplatePath = path.resolve(
     TEMPLATES_DIR,
     'reset-password-email.html',
   );
 
-  const templateSource = await fs
-    .readFile(resetPasswordTemplatePath, 'utf-8');
+  let html;
+  try {
+    const templateSource = await fs.readFile(resetPasswordTemplatePath, 'utf-8');
+    const template = handlebars.compile(templateSource);
+    html = template({
+      name: user.name ?? 'User',
+      link,
+      expires,
+    });
+  } catch (err) {
+    throw createHttpError(500, 'Failed to render reset password email template', {
+      details: err.message,
+    });
+  }
 
-  const template = handlebars.compile(templateSource);
-
-  const html = template({
-    name: user.name,
-    link: link,
-    expires,
-  });
-
-  await sendMail({
-    from: config.smtp.from,
-    to: email,
-    subject: 'Reset your password',
-    html,
-  });
+  try {
+    await sendMail({
+      from: config.smtp.from,
+      to: email,
+      subject: 'Reset your password',
+      html,
+      text: `Hello, ${user.name ?? 'User'}! Reset your password here: ${link} (valid ${expires} minutes)`,
+    });
+  } catch (err) {
+    throw createHttpError(502, 'Failed to send reset password email', {
+      details: err.message,
+    });
+  }
 };
 
 export const resetPassword = async (payload) => {
